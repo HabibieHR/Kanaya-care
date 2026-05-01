@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid Monitor Pro - Clinical Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="max-w-4xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border-l-8 border-blue-600">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Monitoring Cairan Pasien</h1>
+                <p class="text-slate-500 text-sm">Versi Klinis Terintegrasi</p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-medium hover:bg-blue-200 transition">
+                Cetak Laporan
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Section: Intake (Masuk) -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-emerald-700 mb-4 flex items-center">
+                    <span class="mr-2">📥</span> Total Intake (Masuk)
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 uppercase">Parenteral (Infus/Obat)</label>
+                        <input type="number" id="intake-iv" class="calc-trigger w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0 ml">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 uppercase">Enteral (Sonde/NGT)</label>
+                        <input type="number" id="intake-enteral" class="calc-trigger w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0 ml">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 uppercase">Oral (Minum/Makan)</label>
+                        <input type="number" id="intake-oral" class="calc-trigger w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0 ml">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Output (Keluar) -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-rose-700 mb-4 flex items-center">
+                    <span class="mr-2">📤</span> Total Output (Keluar)
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 uppercase">Urine</label>
+                        <input type="number" id="output-urine" class="calc-trigger w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="0 ml">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 uppercase">Drain / NGT Keluar</label>
+                        <input type="number" id="output-drain" class="calc-trigger w-full mt-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" placeholder="0 ml">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 uppercase">IWL (Otomatis)</label>
+                            <input type="number" id="output-iwl" readonly class="w-full mt-1 p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed" placeholder="0 ml">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 uppercase">BB (Kg)</label>
+                            <input type="number" id="weight" class="calc-trigger w-full mt-1 p-2 bg-blue-50 border border-blue-100 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Kg">
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Result Card -->
+        <div class="mt-8 bg-slate-800 text-white p-8 rounded-3xl shadow-xl">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-center md:text-left mb-4 md:mb-0">
+                    <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Net Fluid Balance</p>
+                    <h2 id="net-balance" class="text-5xl font-bold mt-1">0 <span class="text-xl">ml/24h</span></h2>
+                </div>
+                <div id="status-indicator" class="px-6 py-3 rounded-full bg-slate-700 text-sm font-bold border border-slate-600">
+                    MENUNGGU DATA
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-slate-400 text-xs no-print">
+            Sistem pendukung keputusan klinis. Pastikan verifikasi manual untuk tindakan medis.
+        </footer>
+    </div>
+
+    <script>
+        const inputs = document.querySelectorAll('.calc-trigger');
+        const displayBalance = document.getElementById('net-balance');
+        const statusIndicator = document.getElementById('status-indicator');
+
+        function calculate() {
+            // Get Values
+            const iv = parseFloat(document.getElementById('intake-iv').value) || 0;
+            const enteral = parseFloat(document.getElementById('intake-enteral').value) || 0;
+            const oral = parseFloat(document.getElementById('intake-oral').value) || 0;
+            
+            const urine = parseFloat(document.getElementById('output-urine').value) || 0;
+            const drain = parseFloat(document.getElementById('output-drain').value) || 0;
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+
+            // Auto-calculate IWL (Rumus Umum: 15 * BB)
+            const iwl = weight * 15;
+            document.getElementById('output-iwl').value = iwl;
+
+            // Totals
+            const totalIntake = iv + enteral + oral;
+            const totalOutput = urine + drain + iwl;
+            const balance = totalIntake - totalOutput;
+
+            // Update UI
+            displayBalance.innerHTML = `${balance.toLocaleString('id-ID')} <span class="text-xl">ml</span>`;
+
+            // Status Logic
+            updateStatus(balance);
+        }
+
+        function updateStatus(val) {
+            if (val > 500) {
+                statusIndicator.textContent = "RISIKO OVERLOAD";
+                statusIndicator.className = "px-6 py-3 rounded-full bg-rose-500 text-white text-sm font-bold animate-pulse";
+            } else if (val < -500) {
+                statusIndicator.textContent = "RISIKO DEHIDRASI";
+                statusIndicator.className = "px-6 py-3 rounded-full bg-amber-500 text-white text-sm font-bold";
+            } else {
+                statusIndicator.textContent = "NORMAL / STABIL";
+                statusIndicator.className = "px-6 py-3 rounded-full bg-emerald-500 text-white text-sm font-bold";
+            }
+        }
+
+        inputs.forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+    </script>
+</body>
+</html>
